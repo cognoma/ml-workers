@@ -1,0 +1,11 @@
+{
+  "auth_token": "foo",
+  "services": {
+    "task-service": {
+      "base_url": "http://localhost:8001"
+    },
+    "core-service": {
+      "base_url": "http://localhost:8000"
+    }
+  }
+}
