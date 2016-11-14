@@ -21,10 +21,12 @@ class BaseAPIClient(object):
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
 
-        kwargs['headers']['Authorization'] = 'Bearer ' + self.auth_token
+        kwargs['headers']['Authorization'] = 'JWT ' + self.auth_token
 
         response = requests.request(method, self.baseurl + path, **kwargs)
 
         ## TODO: handle non-200 responses
+
+        print(response)
 
         return response.json()
