@@ -5,29 +5,32 @@ import sys
 import time
 
 import backoff
+import nbformat
+import nbconvert
 
 from api_clients.tasks import Tasks
 from api_clients.cognoma import Cognoma
 
-from cognoml.analysis import CognomlClassifier
-from cognoml.data import CognomlData
+cognoma_machine_learning_dir = 'cognoma-machine-learning/'
 
 class MLTaskRunner(object):
-    shuttingdown = False
+    shutting_down = False
+    download_complete = False
 
     def __init__(self, config):
         self.config = config
 
-        self.tasks = Tasks(config['services']['task-service']['base_url'],
-                           config['auth_token'])
+    #     self.tasks = Tasks(config['services']['task-service']['base_url'],
+    #                        config['auth_token'])
+    #
+    #     self.core = Cognoma(config['services']['core-service']['base_url'],
+    #                         config['auth_token'])
+    #
+    # @backoff.on_predicate(backoff.expo,
+    #                       max_value=30,
+    #                       jitter=backoff.full_jitter,
+    #                       factor=2)
 
-        self.core = Cognoma(config['services']['core-service']['base_url'],
-                            config['auth_token'])
-
-    @backoff.on_predicate(backoff.expo,
-                          max_value=30,
-                          jitter=backoff.full_jitter,
-                          factor=2)
     def get_task(self):
         tasks = self.tasks.get_tasks(['classifier-search'])
 
@@ -36,36 +39,41 @@ class MLTaskRunner(object):
         else:
             return False
 
+    def run_notebook(self, notebook_name, base_path=cognoma_machine_learning_dir):
+        start_time = time.time()
+        print(notebook_name + ' start time: ' + str(start_time))
+        output_notebook_filename = notebook_name + '.output.ipynb'
+        with open(base_path + notebook_name + '.ipynb') as file:
+            notebook = nbformat.read(file, as_version=4)
+            preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=-1)
+            print('Processing ' + notebook_name + '...')
+            preprocessor.preprocess(notebook, {'metadata': {'path': base_path}})
+            print(notebook_name + ' processed.')
+            with open('output/' + output_notebook_filename, 'wt') as f:
+                nbformat.write(notebook, f)
+            print(notebook_name + ' output written.')
+
+        end_time = time.time()
+        print(notebook_name + ' timing: ' + str(end_time - start_time) + '\n')
+
     def run(self):
-        while self.shuttingdown == False:
+        while not self.shutting_down:
             # self.task = self.get_task()
             # print(self.task)
 
-            ## TODO: surround task in try/catch block
+            if not self.download_complete:
+                self.run_notebook('1.download')
 
-            start_time = time.time()
+            # TODO: surround task in try/catch block
+            # TODO: use task['data'] to calculate sample_id and mutation_status pseudo table
 
-            a = CognomlData(mutations_json_url='https://github.com/cognoma/machine-learning/raw/876b8131bab46878cb49ae7243e459ec0acd2b47/data/api/hippo-input.json',
-                            directory='/data/downloads')
-            x, y = a.run()
-
-            ## TODO: use task['data'] to calculate sample_id and mutation_status pseudo table
-
-            classifier = CognomlClassifier(x, y)
-            classifier.fit()
-            results = classifier.get_results()
-
-            end_time = time.time()
-
-            json_results = json.dumps(results, indent=2)
-            print(json_results)
-
-            print('Timing ' + str(end_time - start_time))
+            notebook_filename = '2.mutation-classifier'
+            self.run_notebook(notebook_filename)
 
     def shutdown(self, signum, frame):
-        self.shuttingdown = True
+        self.shutting_down = True
 
-        ## TODO: release task in try/catch/finally
+        # TODO: release task in try/catch/finally
 
         print('Shutting down...')
 

@@ -6,14 +6,14 @@ def fatal_code(e):
         return 400 <= e.response.status_code < 500
 
 class BaseAPIClient(object):
-    def __init__(self, baseurl, auth_token):
-        self.baseurl = baseurl
+    def __init__(self, base_url, auth_token):
+        self.base_url = base_url
         self.auth_token = auth_token
 
     @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.RequestException,
-                           requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                          (requests.RequestException,
+                           requests.Timeout,
+                           requests.ConnectionError),
                           max_tries=5,
                           giveup=fatal_code,
                           factor=2)
@@ -25,7 +25,8 @@ class BaseAPIClient(object):
 
         response = requests.request(method, self.baseurl + path, **kwargs)
 
-        ## TODO: handle non-200 responses
+        if response.status_code < 200 or response.status_code > 299:
+            raise Exception('Failed to hit internal service for: ' + method + ' ' + path)
 
         print(response)
 
