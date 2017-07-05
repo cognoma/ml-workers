@@ -68,6 +68,8 @@ target/
 
 # IPython Notebook
 .ipynb_checkpoints
+notebooks/download
+output
 
 # pyenv
 .python-version

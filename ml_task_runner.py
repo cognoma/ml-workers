@@ -11,7 +11,7 @@ import nbconvert
 from api_clients.tasks import Tasks
 from api_clients.cognoma import Cognoma
 
-cognoma_machine_learning_dir = 'cognoma-machine-learning/'
+notebooks_directory = 'notebooks/'
 
 class MLTaskRunner(object):
     shutting_down = False
@@ -39,7 +39,7 @@ class MLTaskRunner(object):
         else:
             return False
 
-    def run_notebook(self, notebook_name, base_path=cognoma_machine_learning_dir):
+    def run_notebook(self, notebook_name, base_path=notebooks_directory):
         start_time = time.time()
         print(notebook_name + ' start time: ' + str(start_time))
         output_notebook_filename = notebook_name + '.output.ipynb'
