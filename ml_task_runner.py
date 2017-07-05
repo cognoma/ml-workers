@@ -66,7 +66,8 @@ class MLTaskRunner(object):
 
             # TODO: surround task in try/catch block
             # TODO: use task['data'] to calculate sample_id and mutation_status pseudo table
-
+            os.environ['gene_ids'] = '7157-7158-7159-7161'
+            os.environ['disease_acronyms'] = 'ACC-BLCA'
             notebook_filename = '2.mutation-classifier'
             self.run_notebook(notebook_filename)
 
