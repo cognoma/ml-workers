@@ -4,9 +4,10 @@ RUN apt-get update && \
 	apt-get install -y wget git nano grep sed && \
     apt-get clean
 
-RUN mkdir /code && mkdir /output
+RUN mkdir /code
 WORKDIR /code
 ADD . /code/
+RUN mkdir /code/notebooks/output
 
 RUN pip install -r requirements.txt
 

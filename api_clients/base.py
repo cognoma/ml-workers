@@ -6,9 +6,10 @@ def fatal_code(e):
         return 400 <= e.response.status_code < 500
 
 class BaseAPIClient(object):
-    def __init__(self, base_url, auth_token):
+    def __init__(self, base_url, auth_token, worker_id):
         self.base_url = base_url
         self.auth_token = auth_token
+        self.worker_id = worker_id
 
     @backoff.on_exception(backoff.expo,
                           (requests.RequestException,
@@ -23,7 +24,7 @@ class BaseAPIClient(object):
 
         kwargs['headers']['Authorization'] = 'JWT ' + self.auth_token
 
-        response = requests.request(method, self.baseurl + path, **kwargs)
+        response = requests.request(method, self.base_url + path, **kwargs)
 
         if response.status_code < 200 or response.status_code > 299:
             raise Exception('Failed to hit internal service for: ' + method + ' ' + path)

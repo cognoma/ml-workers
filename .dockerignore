@@ -1,1 +1,4 @@
 venv/
+notebooks/.ipynb_checkpoints/
+notebooks/download/
+output/
