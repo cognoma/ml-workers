@@ -8,7 +8,8 @@ import backoff
 import nbformat
 import nbconvert
 
-from api_clients.tasks import Tasks
+from api_clients.task import TaskClient
+from api_clients.core import CoreClient
 
 class MLTaskRunner(object):
     shutting_down = False
@@ -16,32 +17,38 @@ class MLTaskRunner(object):
 
     def __init__(self, configuration):
         self.configuration = configuration
-        self.tasks_client = Tasks(configuration['services']['task-service']['base_url'],
-                                  configuration['auth_token'],
-                                  configuration['services']['task-service']['worker_id'])
+        self.task_client = TaskClient(configuration['services']['task-service']['base_url'],
+                                      configuration['auth_token'],
+                                      configuration['services']['task-service']['worker_id'])
+        self.core_client = CoreClient(configuration['services']['core-service']['base_url'],
+                                      configuration['auth_token'],
+                                      configuration['services']['task-service']['worker_id'])
         self.task = None
 
     @staticmethod
     def run_notebook(notebook_name, base_path='notebooks/'):
+        notebook_path = os.path.join(os.getcwd(), base_path, notebook_name + '.ipynb')
+        output_path = os.path.join(os.getcwd(), base_path, 'output', notebook_name + '.output.ipynb')
+
         start_time = time.time()
         print(notebook_name + ' start time: ' + str(start_time))
-        output_notebook_filename = notebook_name + '.output.ipynb'
-        with open(base_path + notebook_name + '.ipynb') as file:
+        with open(notebook_path) as file:
             notebook = nbformat.read(file, as_version=4)
             preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=-1)
             print('Processing ' + notebook_name + '...')
             preprocessor.preprocess(notebook, {'metadata': {'path': base_path}})
             print(notebook_name + ' processed.')
-            with open(base_path + 'output/' + output_notebook_filename, 'wt') as f:
+            with open(output_path, 'wt') as f:
                 nbformat.write(notebook, f)
             print(notebook_name + ' output written.')
 
         end_time = time.time()
         print(notebook_name + ' timing: ' + str(end_time - start_time) + '\n')
+        return output_path
 
     @backoff.on_predicate(backoff.expo, max_value=30, jitter=backoff.full_jitter, factor=2)
     def get_task(self):
-        tasks = self.tasks_client.get_tasks(['classifier-search'])
+        tasks = self.task_client.get_tasks(['classifier-search'])
 
         if len(tasks) > 0:
             return tasks[0]
@@ -63,12 +70,23 @@ class MLTaskRunner(object):
             gene_ids = self.task['data']['genes']
             disease_acronyms = self.task['data']['diseases']
 
+            # Example:
             # os.environ['gene_ids'] = '7157-7158-7159-7161'
             # os.environ['disease_acronyms'] = 'ACC-BLCA'
+
             os.environ['gene_ids'] = '-'.join(gene_ids)
             os.environ['disease_acronyms'] = '-'.join(disease_acronyms)
 
-            self.run_notebook('2.mutation-classifier')
+            notebook_output_path = self.run_notebook('2.mutation-classifier')
+            print('Machine learning completed.')
+
+            print('Uploading notebook to core-service...')
+            self.core_client.upload_notebook(self.task, notebook_output_path)
+
+            print('Completing task with task-service...')
+            self.task_client.complete_task(self.task)
+
+            print('Task complete.')
 
     def shutdown(self, signum, frame):
         self.shutting_down = True
