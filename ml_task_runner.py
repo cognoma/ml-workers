@@ -67,9 +67,9 @@ class MLTaskRunner(object):
 
             print('Starting task {id}: {task}'.format(id=self.task['id'], task=self.task))
 
-            # if not self.download_complete:
-            #     self.run_notebook('1.download')
-            #     self.download_complete = True
+            if not self.download_complete:
+                self.run_notebook('1.download')
+                self.download_complete = True
 
             gene_ids = self.task['data']['genes']
             disease_acronyms = self.task['data']['diseases']
