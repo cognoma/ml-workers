@@ -7,7 +7,6 @@ RUN apt-get update && \
 RUN mkdir /code
 WORKDIR /code
 ADD . /code/
-RUN mkdir /code/notebooks/output
 
 RUN pip install -r requirements.txt
 

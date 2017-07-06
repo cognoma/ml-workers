@@ -28,7 +28,8 @@ class MLTaskRunner(object):
     @staticmethod
     def run_notebook(notebook_name, base_path='notebooks/'):
         notebook_path = os.path.join(os.getcwd(), base_path, notebook_name + '.ipynb')
-        output_path = os.path.join(os.getcwd(), base_path, 'output', notebook_name + '.output.ipynb')
+        output_base_directory = os.path.join(os.getcwd(), base_path, 'output')
+        output_path = os.path.join(output_base_directory, notebook_name + '.output.ipynb')
 
         start_time = time.time()
         print(notebook_name + ' start time: ' + str(start_time))
@@ -38,6 +39,10 @@ class MLTaskRunner(object):
             print('Processing ' + notebook_name + '...')
             preprocessor.preprocess(notebook, {'metadata': {'path': base_path}})
             print(notebook_name + ' processed.')
+
+            if not os.path.isdir(output_base_directory):
+                os.mkdir(output_base_directory)
+
             with open(output_path, 'wt') as f:
                 nbformat.write(notebook, f)
             print(notebook_name + ' output written.')
@@ -67,9 +72,14 @@ class MLTaskRunner(object):
 
             print('Starting task {id}: {task}'.format(id=self.task['id'], task=self.task))
 
-            if not self.download_complete:
-                self.run_notebook('1.download')
-                self.download_complete = True
+            try:
+                if not self.download_complete:
+                    self.run_notebook('1.download')
+                    self.download_complete = True
+            except Exception as error:
+                print('Failed to run download notebook.')
+                print(error)
+                os.kill(os.getpid(), signal.SIGTERM)
 
             gene_ids = self.task['data']['genes']
             disease_acronyms = self.task['data']['diseases']
