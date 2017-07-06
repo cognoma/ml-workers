@@ -58,14 +58,18 @@ class MLTaskRunner(object):
     def run(self):
         while not self.shutting_down:
             self.task = self.get_task()
-            print(self.task)
 
             if self.task is None:
-                time.sleep(5)
+                sleep_time = 5
+                print('No task found. Sleeping for {time} seconds...'.format(time=sleep_time))
+                time.sleep(sleep_time)
                 continue
 
-            if not self.download_complete:
-                self.run_notebook('1.download')
+            print('Starting task {id}: {task}'.format(id=self.task['id'], task=self.task))
+
+            # if not self.download_complete:
+            #     self.run_notebook('1.download')
+            #     self.download_complete = True
 
             gene_ids = self.task['data']['genes']
             disease_acronyms = self.task['data']['diseases']
@@ -73,29 +77,39 @@ class MLTaskRunner(object):
             # Example:
             # os.environ['gene_ids'] = '7157-7158-7159-7161'
             # os.environ['disease_acronyms'] = 'ACC-BLCA'
-
-            os.environ['gene_ids'] = '-'.join(gene_ids)
+            os.environ['gene_ids'] = '-'.join([str(id) for id in gene_ids])
             os.environ['disease_acronyms'] = '-'.join(disease_acronyms)
 
-            notebook_output_path = self.run_notebook('2.mutation-classifier')
-            print('Machine learning completed.')
+            try:
+                notebook_output_path = self.run_notebook('2.mutation-classifier')
+                print('Machine learning completed.')
+                print('Uploading notebook to core-service...')
+                self.core_client.upload_notebook(self.task, notebook_output_path)
 
-            print('Uploading notebook to core-service...')
-            self.core_client.upload_notebook(self.task, notebook_output_path)
+                print('Completing task with task-service...')
+                self.task_client.complete_task(self.task)
 
-            print('Completing task with task-service...')
-            self.task_client.complete_task(self.task)
-
-            print('Task complete.')
+                print('Task complete.')
+            except Exception as error:
+                print('Failed to complete task.')
+                print(error)
+                self.task_client.fail_task(self.task)
 
     def shutdown(self, signum, frame):
         self.shutting_down = True
 
-        # TODO: release task in try/catch/finally
-
-        print('Shutting down...')
-
-        sys.exit(0)
+        try:
+            if self.task is not None:
+                self.task_client.release_task(self.task)
+                print('Task {id} released.'.format(id=self.task['id']))
+            else:
+                print('No task to release.')
+        except Exception as error:
+            print('Encountered error while releasing task {id}.'.format(id=self.task['id']))
+            print(error)
+        finally:
+            print('Shutting down...')
+            sys.exit(0)
 
 if __name__ == '__main__':
     filename = os.getenv('COGNOMA_CONFIG', './config/dev.json')

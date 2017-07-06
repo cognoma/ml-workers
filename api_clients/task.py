@@ -7,7 +7,17 @@ class TaskClient(BaseAPIClient):
                             '/tasks/queue/',
                             params={'tasks': task_names, 'worker_id': self.worker_id, 'limit': limit})
 
+    def release_task(self, task):
+        return self.request('post',
+                            '/tasks/{id}/release/'.format(id=task['id']),
+                            params={'worker_id': self.worker_id})
+
     def complete_task(self, task):
         return self.request('post',
                             '/tasks/{id}/complete/'.format(id=task['id']),
+                            params={'worker_id': self.worker_id})
+
+    def fail_task(self, task):
+        return self.request('post',
+                            '/tasks/{id}/fail/'.format(id=task['id']),
                             params={'worker_id': self.worker_id})
