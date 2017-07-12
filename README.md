@@ -1,6 +1,6 @@
 # Cognoma ml-workers
 
-This repository houses the machine learning worker code. The workers access the [core-service](https://github.com/cognoma/core-service) and [task-service](https://github.com/cognoma/task-service) using an HTTP RESTful API. The actually machine learning code is housed as an installable module in the [machine-learning](https://github.com/cognoma/machine-learning) repository.
+This repository houses the machine learning worker code. The workers access the [core-service](https://github.com/cognoma/core-service) using an HTTP RESTful API. The machine learning code used by this repository comes from the [machine-learning](https://github.com/cognoma/machine-learning) repository.
 
 ## Getting started
 
