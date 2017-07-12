@@ -3,6 +3,7 @@ import os
 import signal
 import sys
 import time
+from pathlib import Path
 
 import backoff
 import nbformat
@@ -22,30 +23,30 @@ class MLTaskRunner(object):
         self.classifier = None
 
     @staticmethod
-    def run_notebook(notebook_name, base_path='notebooks/'):
-        notebook_path = os.path.join(os.getcwd(), base_path, notebook_name + '.ipynb')
-        output_base_directory = os.path.join(os.getcwd(), base_path, 'output')
-        output_path = os.path.join(output_base_directory, notebook_name + '.output.ipynb')
+    def run_notebook(notebook_name, notebooks_folder_name='notebooks'):
+        notebook_path = Path('.', notebooks_folder_name, notebook_name + '.ipynb')
+        output_folder_path = Path('.', notebooks_folder_name, 'output')
+        output_notebook_path = Path(output_folder_path, notebook_name + '.output.ipynb')
 
-        start_time = time.time()
+        start_time = time.perf_counter()
         print(notebook_name + ' start time: ' + str(start_time))
-        with open(notebook_path) as file:
+        with notebook_path.open() as file:
             notebook = nbformat.read(file, as_version=4)
             preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=-1)
             print('Processing ' + notebook_name + '...')
-            preprocessor.preprocess(notebook, {'metadata': {'path': base_path}})
+            preprocessor.preprocess(notebook, {'metadata': {'path': notebooks_folder_name}})
             print(notebook_name + ' processed.')
 
-            if not os.path.isdir(output_base_directory):
-                os.mkdir(output_base_directory)
+            if not output_folder_path.is_dir():
+                output_folder_path.mkdir()
 
-            with open(output_path, 'wt') as f:
+            with output_notebook_path.open('wt') as f:
                 nbformat.write(notebook, f)
             print(notebook_name + ' output written.')
 
-        end_time = time.time()
+        end_time = time.perf_counter()
         print(notebook_name + ' timing: ' + str(end_time - start_time) + '\n')
-        return output_path
+        return str(output_notebook_path.resolve())
 
     @backoff.on_predicate(backoff.expo, max_value=30, jitter=backoff.full_jitter, factor=2)
     def get_classifier(self):
@@ -83,7 +84,7 @@ class MLTaskRunner(object):
             # Example:
             # os.environ['gene_ids'] = '7157-7158-7159-7161'
             # os.environ['disease_acronyms'] = 'ACC-BLCA'
-            os.environ['gene_ids'] = '-'.join([str(id) for id in gene_ids])
+            os.environ['gene_ids'] = '-'.join(str(id) for id in gene_ids)
             os.environ['disease_acronyms'] = '-'.join(disease_acronyms)
 
             try:
