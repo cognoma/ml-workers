@@ -1,0 +1,11 @@
+version: '2'
+services:
+  ml-worker:
+    build: .
+    environment:
+      JOBLIB_TEMP_FOLDER: /data/joblib
+    command: python ml_task_runner.py
+    volumes:
+      - .:/code
+      - /data
+    network_mode: "host"
