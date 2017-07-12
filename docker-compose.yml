@@ -8,3 +8,4 @@ services:
     volumes:
       - .:/code
       - /data
+    network_mode: "host"
