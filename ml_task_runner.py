@@ -8,6 +8,7 @@ from pathlib import Path
 import backoff
 import nbformat
 import nbconvert
+import settings
 
 from api_clients.core import CoreClient
 
@@ -17,9 +18,9 @@ class MLTaskRunner(object):
 
     def __init__(self, configuration):
         self.configuration = configuration
-        self.core_client = CoreClient(configuration['services']['core-service']['base_url'],
-                                      configuration['auth_token'],
-                                      configuration['services']['core-service']['worker_id'])
+        self.core_client = CoreClient(settings.base_url,
+                                      settings.auth_token,
+                                      settings.worker_id)
         self.classifier = None
 
     @staticmethod
