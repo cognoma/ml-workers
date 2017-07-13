@@ -30,8 +30,8 @@ class MLTaskRunner(object):
 
         start_time = time.perf_counter()
         print(notebook_name + ' start time: ' + str(start_time))
-        with notebook_path.open() as file:
-            notebook = nbformat.read(file, as_version=4)
+        with notebook_path.open() as notebook_file:
+            notebook = nbformat.read(notebook_file, as_version=4)
             preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=-1)
             print('Processing ' + notebook_name + '...')
             preprocessor.preprocess(notebook, {'metadata': {'path': notebooks_folder_name}})
