@@ -1,9 +1,6 @@
 import requests
 import backoff
-
-def fatal_code(e):
-    if e.response and e.response.status_code:
-        return 400 <= e.response.status_code < 500
+from settings import fatal_code
 
 class BaseAPIClient(object):
     def __init__(self, base_url, auth_token, worker_id):
