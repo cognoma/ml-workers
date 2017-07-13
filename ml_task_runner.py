@@ -16,8 +16,7 @@ class MLTaskRunner(object):
     shutting_down = False
     download_complete = False
 
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self):
         self.core_client = CoreClient(settings.base_url,
                                       settings.auth_token,
                                       settings.worker_id)
@@ -119,10 +118,7 @@ class MLTaskRunner(object):
 if __name__ == '__main__':
     filename = os.getenv('COGNOMA_CONFIG', './config/dev.json')
 
-    with open(filename) as config_file:    
-        config = json.load(config_file)
-
-    ml_classifier_runner = MLTaskRunner(config)
+    ml_classifier_runner = MLTaskRunner()
 
     signal.signal(signal.SIGINT, ml_classifier_runner.shutdown)
     signal.signal(signal.SIGTERM, ml_classifier_runner.shutdown)
