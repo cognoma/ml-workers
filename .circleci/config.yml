@@ -6,11 +6,10 @@ jobs:
         steps:
             - checkout
             - setup_remote_docker
+            - export CONTAINER_NAME=$AWS_ECR_ENDPOINT.dkr.ecr.us-east-1.amazonaws.com/cognoma-ml-workers:$CIRCLE_SHA1
             - run:
                 name: Build ml-workers Container
-                command: |
-                    export CONTAINER_NAME=$AWS_ECR_ENDPOINT.dkr.ecr.us-east-1.amazonaws.com/cognoma-ml-workers:$CIRCLE_SHA1
-                    docker build -t $CONTAINER_NAME .
+                command: docker build -t $CONTAINER_NAME .
             - run:
                 name: Test ml-workers
                 command: docker run $CONTAINER_NAME python test_ml_task_runner.py
