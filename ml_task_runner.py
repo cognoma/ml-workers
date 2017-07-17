@@ -1,4 +1,3 @@
-import json
 import os
 import signal
 import sys
@@ -12,19 +11,7 @@ import settings
 
 from api_clients.core import CoreClient
 
-class MLTaskRunner(object):
-    shutting_down = False
-    download_complete = False
-
-    def __init__(self, configuration):
-        self.configuration = configuration
-        self.core_client = CoreClient(settings.base_url,
-                                      settings.auth_token,
-                                      settings.worker_id)
-        self.classifier = None
-
-    @staticmethod
-    def run_notebook(notebook_name, notebooks_folder_name='notebooks'):
+def run_notebook(notebook_name, notebooks_folder_name='notebooks'):
         notebook_path = Path('.', notebooks_folder_name, notebook_name + '.ipynb')
         output_folder_path = Path('.', notebooks_folder_name, 'output')
         output_notebook_path = Path(output_folder_path, notebook_name + '.output.ipynb')
@@ -49,6 +36,16 @@ class MLTaskRunner(object):
         print(notebook_name + ' timing: ' + str(end_time - start_time) + '\n')
         return str(output_notebook_path.resolve())
 
+class MLTaskRunner(object):
+    shutting_down = False
+    download_complete = False
+
+    def __init__(self):
+        self.core_client = CoreClient(settings.base_url,
+                                      settings.auth_token,
+                                      settings.worker_id)
+        self.classifier = None
+
     @backoff.on_predicate(backoff.expo, max_value=30, jitter=backoff.full_jitter, factor=2)
     def get_classifier(self):
         classifiers = self.core_client.get_classifiers(['classifier-search'])
@@ -60,6 +57,15 @@ class MLTaskRunner(object):
 
     def run(self):
         while not self.shutting_down:
+            try:
+                if not self.download_complete:
+                    run_notebook('1.download')
+                    self.download_complete = True
+            except Exception as error:
+                print('Failed to run download notebook.')
+                print(error)
+                os.kill(os.getpid(), signal.SIGTERM)
+
             self.classifier = self.get_classifier()
 
             if self.classifier is None:
@@ -69,15 +75,6 @@ class MLTaskRunner(object):
                 continue
 
             print('Starting classifier {id}: {classifier}'.format(id=self.classifier['id'], classifier=self.classifier))
-
-            try:
-                if not self.download_complete:
-                    self.run_notebook('1.download')
-                    self.download_complete = True
-            except Exception as error:
-                print('Failed to run download notebook.')
-                print(error)
-                os.kill(os.getpid(), signal.SIGTERM)
 
             gene_ids = self.classifier['genes']
             disease_acronyms = self.classifier['diseases']
@@ -89,7 +86,7 @@ class MLTaskRunner(object):
             os.environ['disease_acronyms'] = '-'.join(disease_acronyms)
 
             try:
-                notebook_output_path = self.run_notebook('2.mutation-classifier')
+                notebook_output_path = run_notebook('2.mutation-classifier')
                 print('Machine learning completed.')
                 print('Uploading notebook to core-service...')
                 self.core_client.upload_notebook(self.classifier, notebook_output_path)
@@ -117,12 +114,7 @@ class MLTaskRunner(object):
             sys.exit(0)
 
 if __name__ == '__main__':
-    filename = os.getenv('COGNOMA_CONFIG', './config/dev.json')
-
-    with open(filename) as config_file:    
-        config = json.load(config_file)
-
-    ml_classifier_runner = MLTaskRunner(config)
+    ml_classifier_runner = MLTaskRunner()
 
     signal.signal(signal.SIGINT, ml_classifier_runner.shutdown)
     signal.signal(signal.SIGTERM, ml_classifier_runner.shutdown)

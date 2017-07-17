@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt
 
 ENV PYTHONUNBUFFERED 1
 
-ENTRYPOINT /bin/bash -c "python ml_task_runner.py"
+CMD /bin/bash -c "python ml_task_runner.py"
