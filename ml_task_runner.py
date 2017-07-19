@@ -11,16 +11,16 @@ import settings
 
 from api_clients.core import CoreClient
 
-def run_notebook(notebook_name, notebooks_folder_name='notebooks'):
+def run_notebook(notebook_name, notebooks_folder_name='notebooks', output_id='default', timeout=900):
         notebook_path = Path('.', notebooks_folder_name, notebook_name + '.ipynb')
         output_folder_path = Path('.', notebooks_folder_name, 'output')
-        output_notebook_path = Path(output_folder_path, notebook_name + '.output.ipynb')
+        output_notebook_path = Path(output_folder_path, notebook_name + '-{id}.output.ipynb'.format(id=output_id))
 
         start_time = time.perf_counter()
         print(notebook_name + ' start time: ' + str(start_time))
         with notebook_path.open() as notebook_file:
             notebook = nbformat.read(notebook_file, as_version=4)
-            preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=-1)
+            preprocessor = nbconvert.preprocessors.ExecutePreprocessor(timeout=timeout)
             print('Processing ' + notebook_name + '...')
             preprocessor.preprocess(notebook, {'metadata': {'path': notebooks_folder_name}})
             print(notebook_name + ' processed.')
