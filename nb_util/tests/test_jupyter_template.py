@@ -141,5 +141,5 @@ def test_replace(new_keywords, small_cells):
 
 
 def test_create_nb(small_cells, small_notebook):
-    nb = jt.create_nb(small_cells)
+    nb = jt._create_nb(small_cells)
     assert nb == small_notebook

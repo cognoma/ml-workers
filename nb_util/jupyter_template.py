@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Document use of this module.
-
-The docstring for a module should generally list the classes, exceptions and
-functions (and any other objects) that are exported by the module, with a
-one-line summary of each. (These summaries generally give less detail than the
-summary line in the object's docstring.) The docstring for a package (i.e., the
-docstring of the package's __init__.py module) should also list the modules and
-subpackages exported by the package.
-
-
-1. make template: encode then replace
-2. fill template: substitute then decode
-
-"""
+"""Lightweight templates for Jupyter notebooks."""
 
 import nbformat
 import re
@@ -21,8 +8,13 @@ from collections import namedtuple
 
 
 Cell = namedtuple('Cell', ['type', 'source'])
+Cell.__doc__ = """A Jupyter notebook cell.
 
-new_cell = {
+type - type of the cell
+source - contents of the cell
+"""
+
+__new_cell = {
     'code': nbformat.v4.new_code_cell,
     'markdown': nbformat.v4.new_markdown_cell,
     'raw': nbformat.v4.new_raw_cell,
@@ -41,10 +33,16 @@ def each_cell(func):
 
 
 class JupyterTemplate(object):
-    """The docstring for a class should summarize its behavior and list the
-    public methods and instance variables.
+    """
+    Represent a Jupyter notebook template.
+
+    Instance variables:
+    cells - iterator of Cell
+    keywords - list of strings
 
     Public methods:
+    fill_template - raises a KeyError if the dictionary doesn't contain the
+    proper keys.
 
     """
     def __init__(self, cells, keywords):
@@ -58,6 +56,7 @@ class JupyterTemplate(object):
         self.cells = cells
         self.keywords = sorted(keywords)
 
+    @classmethod
     def _get_cells_from_nb(cls, fname):
         """
         Extract cells from a file.
@@ -69,9 +68,6 @@ class JupyterTemplate(object):
         nb = nbformat.read(fname, nbformat.NO_CONVERT)
         return [Cell(c['cell_type'], c['source']) for c in nb['cells']]
 
-    def _make_template_cell(self, cell):
-        return new_cell
-
     def fill_template(self, keywords):
         """Replace keywords to create a template.
 
@@ -79,15 +75,17 @@ class JupyterTemplate(object):
         keywords - dictionary of strings
 
         """
+        if sorted(keywords.keys()) != self.keywords:
+            raise KeyError('Expected keys: {}'.format(self.keywords))
         substitute = _substitute(keywords)
         new_cells = substitute(self.cells)
         new_cells = _decode(new_cells)
-        return create_nb(new_cells)
+        return _create_nb(new_cells)
 
 
 @each_cell
 def _encode(s):
-    """Encode source cells
+    """Encode source cells.
 
     Args:
     s - jupyter notebook cell source
@@ -145,7 +143,7 @@ def create_template(fname, new_keywords):
     return JupyterTemplate(new_cells, new_keywords.values())
 
 
-def create_nb(cells):
+def _create_nb(cells):
     """Return a Jupyter notebook as a string.
 
     Args:
@@ -153,5 +151,5 @@ def create_nb(cells):
 
     """
     nbjson = nbformat.v4.new_notebook()
-    nbjson.cells = [new_cell[c.type](c.source) for c in cells]
+    nbjson.cells = [__new_cell[c.type](c.source) for c in cells]
     return nbformat.writes(nbjson, version=nbformat.current_nbformat)
