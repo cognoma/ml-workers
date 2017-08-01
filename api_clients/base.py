@@ -24,6 +24,8 @@ class BaseAPIClient(object):
         response = requests.request(method, self.base_url + path, **kwargs)
 
         if response.status_code < 200 or response.status_code > 299:
+            print('Response status code: ' + str(response.status_code))
+            print('Response content: ' + str(response.content))
             raise Exception('Failed to hit internal service for: ' + method + ' ' + path)
 
         print(response)
