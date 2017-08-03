@@ -12,10 +12,14 @@ class CoreClient(BaseAPIClient):
                             '/classifiers/{id}/release/'.format(id=classifier['id']),
                             params={'worker_id': self.worker_id})
 
-    def fail_classifier(self, classifier):
+    def fail_classifier(self, classifier, fail_reason, fail_message):
         return self.request('post',
                             '/classifiers/{id}/fail/'.format(id=classifier['id']),
-                            params={'worker_id': self.worker_id})
+                            params={'worker_id': self.worker_id},
+                            json={
+                                'fail_reason': fail_reason,
+                                'fail_message': fail_message
+                            })
 
     def upload_notebook(self, classifier, notebook_output_path):
         with open(notebook_output_path, mode='rb') as notebook_file:

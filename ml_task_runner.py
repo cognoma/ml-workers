@@ -92,10 +92,13 @@ class MLTaskRunner(object):
                 self.core_client.upload_notebook(self.classifier, notebook_output_path)
 
                 print('Task complete.')
+            except MemoryError as error:
+                print(error)
+                self.core_client.fail_classifier(self.classifier, 'memory_error', 'Ran out of memory while processing classifier.')
             except Exception as error:
                 print('Failed to complete classifier.')
                 print(error)
-                self.core_client.fail_classifier(self.classifier)
+                self.core_client.fail_classifier(self.classifier, 'processing_error', str(error))
 
     def shutdown(self, signum, frame):
         self.shutting_down = True
