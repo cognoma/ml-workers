@@ -22,3 +22,11 @@ virtualenv --python=python3 env
 source env/bin/activate
 pip install --requirement requirements.txt
 ```
+
+### Test
+
+Replace '/ml-workers' with the path to your directory
+
+```sh
+docker run -v /ml-workers:/code ml-workers /bin/bash -c "python test_ml_task_runner.py"
+```
