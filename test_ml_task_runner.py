@@ -16,5 +16,5 @@ except MemoryError as error:
 except Exception as error:
     print('Failed to complete classifier.')
     print(error)
-    
+
 print('Check notebook output in folder output.')
