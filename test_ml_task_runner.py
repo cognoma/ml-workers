@@ -18,4 +18,3 @@ except Exception as error:
     print(error)
     
 print('Check notebook output in folder output.')
-    
