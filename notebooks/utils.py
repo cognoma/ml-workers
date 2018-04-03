@@ -5,6 +5,7 @@ Usage - Import only
 """
 
 import pandas as pd
+from sklearn.metrics import roc_curve, roc_auc_score
 import plotnine as gg
 
 
@@ -95,13 +96,10 @@ def get_genes_coefficients(pca_object, classifier_object,
         coefficients = classifier_object.coef_[0][0:-num_covariates]
     else:
         coefficients = classifier_object.coef_[0]
-
     # Get the pca weights
     weights = pca_object.components_
-
     # Combine the coefficients and weights
     gene_coefficients = weights.T @ coefficients.T
-
     # Create the dataframe with correct index
     gene_coefficients_df = pd.DataFrame(gene_coefficients, columns=['weight'])
     gene_coefficients_df.index = expression_df.columns
@@ -123,9 +121,16 @@ def select_feature_set_columns(X, feature_set, n_covariates):
     """
     Select the feature set for the different models within the pipeline
     """
-    n_covariates = len(covariate_df.columns)
     if feature_set == 'covariates':
         return X[:, :n_covariates]
     if feature_set == 'expressions':
         return X[:, n_covariates:]
     raise ValueError('feature_set not supported: {}'.format(feature_set))
+
+
+def get_threshold_metrics(y_true, y_pred):
+    roc_columns = ['fpr', 'tpr', 'threshold']
+    roc_items = zip(roc_columns, roc_curve(y_true, y_pred))
+    roc_df = pd.DataFrame.from_items(roc_items)
+    auroc = roc_auc_score(y_true, y_pred)
+    return {'auroc': auroc, 'roc_df': roc_df}
