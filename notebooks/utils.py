@@ -1,22 +1,34 @@
-def theme_cognoma(fontsize_mult=1):   
-    import plotnine as gg
-    
-    return (gg.theme_bw(base_size = 14 * fontsize_mult) +
-        gg.theme(
-          line = gg.element_line(color = "#4d4d4d"), 
-          rect = gg.element_rect(fill = "white", color = None), 
-          text = gg.element_text(color = "black"), 
-          axis_ticks = gg.element_line(color = "#4d4d4d"),
-          legend_key = gg.element_rect(color = None), 
-          panel_border = gg.element_rect(color = "#4d4d4d"),  
-          panel_grid = gg.element_line(color = "#b3b3b3"), 
-          panel_grid_major_x = gg.element_blank(),
-          panel_grid_minor = gg.element_blank(),
-          strip_background = gg.element_rect(fill = "#FEF2E2", color = "#4d4d4d"),
-          axis_text = gg.element_text(size = 12 * fontsize_mult, color="#4d4d4d"),
-          axis_title_x = gg.element_text(size = 13 * fontsize_mult, color="#4d4d4d"),
-          axis_title_y = gg.element_text(size = 13 * fontsize_mult, color="#4d4d4d")
-    ))
+"""
+Methods for building Cognoma mutation classifiers
+
+Usage - Import only
+"""
+
+import pandas as pd
+from sklearn.metrics import roc_curve, roc_auc_score
+import plotnine as gg
+
+
+def theme_cognoma(fontsize_mult=1):
+    return (gg.theme_bw(base_size=14 * fontsize_mult) +
+            gg.theme(line=gg.element_line(color="#4d4d4d"),
+                     rect=gg.element_rect(fill="white", color=None),
+                     text=gg.element_text(color="black"),
+                     axis_ticks=gg.element_line(color="#4d4d4d"),
+                     legend_key=gg.element_rect(color=None),
+                     panel_border=gg.element_rect(color="#4d4d4d"),
+                     panel_grid=gg.element_line(color="#b3b3b3"),
+                     panel_grid_major_x=gg.element_blank(),
+                     panel_grid_minor=gg.element_blank(),
+                     strip_background=gg.element_rect(fill="#FEF2E2",
+                                                      color="#4d4d4d"),
+                     axis_text=gg.element_text(size=12 * fontsize_mult,
+                                               color="#4d4d4d"),
+                     axis_title_x=gg.element_text(size=13 * fontsize_mult,
+                                                  color="#4d4d4d"),
+                     axis_title_y=gg.element_text(size=13 * fontsize_mult,
+                                                  color="#4d4d4d")))
+
 
 def get_model_coefficients(classifier, feature_set, covariate_names):
     """
@@ -26,36 +38,36 @@ def get_model_coefficients(classifier, feature_set, covariate_names):
         and a combined model
     * Assumes the PCA features come before any covariates that are included
     * Sorts the final dataframe by the absolute value of the coefficients
-    
+
     Args:
-        classifier: the final sklearn classifier object 
+        classifier: the final sklearn classifier object
         feature_set: string of the model's name {expressions, covariates, full}
         covariate_names: list of the names of the covariate features matrix
-    
+
     Returns:
         pandas.DataFrame: mapping of feature name to coefficient value
     """
     import pandas as pd
     import numpy as np
-    
-    coefs = classifier.coef_[0]   
-    
-    if feature_set=='expressions':
-        features = ['PCA_%d' %cf for cf in range(len(coefs))]
-    elif feature_set=='covariates': 
+
+    coefs = classifier.coef_[0]
+
+    if feature_set == 'expressions':
+        features = ['PCA_%d' % cf for cf in range(len(coefs))]
+    elif feature_set == 'covariates':
         features = covariate_names
-    else:        
-        features = ['PCA_%d' %cf for cf in range(len(coefs) - len(covariate_names))]
+    else:
+        features = ['PCA_%d' % cf for cf in range(len(coefs) - len(covariate_names))]
         features.extend(covariate_names)
-     
-    coef_df = pd.DataFrame({'feature': features, 'weight': coefs})  
-        
+
+    coef_df = pd.DataFrame({'feature': features, 'weight': coefs})
+
     coef_df['abs'] = coef_df['weight'].abs()
     coef_df = coef_df.sort_values('abs', ascending=False)
     coef_df['feature_set'] = feature_set
-    
-    
+
     return coef_df
+
 
 def get_genes_coefficients(pca_object, classifier_object,
                            expression_df, expression_genes_df,
@@ -75,21 +87,18 @@ def get_genes_coefficients(pca_object, classifier_object,
 
     Returns:
         gene_coefficients_df: A dataframe with entreze gene-ID, gene name,
-                            coefficient abbsolute value of coefficient, and 
-                            gene description. The dataframe is sorted by 
+                            coefficient abbsolute value of coefficient, and
+                            gene description. The dataframe is sorted by
                             absolute value of coefficient.
     """
-
-    import pandas as pd
-
     # Get the classifier coefficients.
     if num_covariates:
         coefficients = classifier_object.coef_[0][0:-num_covariates]
     else:
         coefficients = classifier_object.coef_[0]
-    # Get the pca weights.
+    # Get the pca weights
     weights = pca_object.components_
-    # Combine the coefficients and weights.
+    # Combine the coefficients and weights
     gene_coefficients = weights.T @ coefficients.T
     # Create the dataframe with correct index
     gene_coefficients_df = pd.DataFrame(gene_coefficients, columns=['weight'])
@@ -98,7 +107,7 @@ def get_genes_coefficients(pca_object, classifier_object,
     expression_genes_df.index = expression_genes_df.index.map(str)
     # Add gene symbol and description
     gene_coefficients_df['symbol'] = expression_genes_df['symbol']
-    gene_coefficients_df['description'] = expression_genes_df['description'] 
+    gene_coefficients_df['description'] = expression_genes_df['description']
     # Add absolute value and sort by highest absolute value.
     gene_coefficients_df['abs'] = gene_coefficients_df['weight'].abs()
     gene_coefficients_df.sort_values(by='abs', ascending=False, inplace=True)
@@ -106,3 +115,22 @@ def get_genes_coefficients(pca_object, classifier_object,
     gene_coefficients_df = gene_coefficients_df[['symbol', 'weight', 'abs',
                                                 'description']]
     return(gene_coefficients_df)
+
+
+def select_feature_set_columns(X, feature_set, n_covariates):
+    """
+    Select the feature set for the different models within the pipeline
+    """
+    if feature_set == 'covariates':
+        return X[:, :n_covariates]
+    if feature_set == 'expressions':
+        return X[:, n_covariates:]
+    raise ValueError('feature_set not supported: {}'.format(feature_set))
+
+
+def get_threshold_metrics(y_true, y_pred):
+    roc_columns = ['fpr', 'tpr', 'threshold']
+    roc_items = zip(roc_columns, roc_curve(y_true, y_pred))
+    roc_df = pd.DataFrame.from_items(roc_items)
+    auroc = roc_auc_score(y_true, y_pred)
+    return {'auroc': auroc, 'roc_df': roc_df}
