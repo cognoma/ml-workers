@@ -1,4 +1,5 @@
 altair==1.2.0
+appnope==0.1.0
 backoff==1.4.3
 bleach==2.0.0
 certifi==2017.4.17
@@ -34,8 +35,10 @@ pickleshare==0.7.4
 plotnine==0.2.1
 prompt-toolkit==1.0.14
 ptyprocess==0.5.2
+py==1.4.34
 Pygments==2.2.0
 pyparsing==2.2.0
+pytest==3.1.3
 python-dateutil==2.6.0
 pytz==2017.2
 pyzmq==16.0.2

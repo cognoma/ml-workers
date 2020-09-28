@@ -11,6 +11,7 @@ dependencies:
 test:
     override:
         - docker run $AWS_ECR_ENDPOINT.dkr.ecr.us-east-1.amazonaws.com/cognoma-ml-workers:$CIRCLE_SHA1 python test_ml_task_runner.py
+        - docker run $AWS_ECR_ENDPOINT.dkr.ecr.us-east-1.amazonaws.com/cognoma-ml-workers:$CIRCLE_SHA1 pytest nb_util
 
 deployment:
     production:
