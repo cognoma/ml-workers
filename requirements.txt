@@ -25,7 +25,7 @@ nbconvert==5.2.1
 nbformat==4.3.0
 neo4j-driver==1.4.0
 numexpr==2.6.2
-numpy==1.13.0
+numpy==1.21.0
 pandas==0.20.2
 pandocfilters==1.4.1
 patsy==0.4.1
